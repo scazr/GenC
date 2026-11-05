@@ -1,7 +1,7 @@
 module Parser.ParseCompoundStatement where
 
 import Text.Megaparsec
-import Text.Megaparsec.Debug (dbg)
+--import Text.Megaparsec.Debug (dbg)
 
 import AST
 import Parser.ParseJunk

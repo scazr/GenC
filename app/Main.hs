@@ -1,9 +1,11 @@
 module Main where
 
+import Prettyprinter (vsep, pretty)
+import Prettyprinter.Render.String (renderString)
+import Prettyprinter.Internal (layoutPretty, defaultLayoutOptions)
 import System.Environment
 import System.Process
 import Text.Megaparsec (errorBundlePretty, parse)
-import Text.Show.Pretty (pPrint)
 
 import Parser.ParseProgram
 
@@ -22,8 +24,12 @@ compile inputFile outputFile = do
     let ast = case parse pProgram inputFile sourceCode of
             Left err -> error $ "Parse error: " ++ errorBundlePretty err
             Right val -> val
-    
-    pPrint $ ast
+
+    let compiledDoc = vsep (map pretty ast)
+
+    let cCode = renderString (layoutPretty defaultLayoutOptions compiledDoc)
+
+    putStrLn cCode
 
     -- let transpiledAst = runMonomorphization ast
 
