@@ -12,9 +12,13 @@ import Text.Megaparsec
 
 type Parser = Parsec Void String
 type Identifier = String
+
 -- | Contains variable type and name.
 type Statement = (FullType, Identifier)
+
+-- | Used for function bodies
 type TemplateDeclaration = String
+
 type Program = [TemplateDefinition]
 
 -- | Alias for String. Used for primitive (char, int, float, double etc.),
@@ -24,32 +28,43 @@ type BaseType = Identifier
 -- | Alias for String. Used for type qualifier (const, unsigned, long, volatile etc.).
 type QualifierType = Identifier 
 
--- | Alias for ([String], String). Represent the base type + all its qualifiers.
--- type BasicType = ([QualifierType], BaseType)
+-- | Full type declaration.
+data FullType
+              = BasicType [QualifierType] BaseType
+                -- ^ Represent basic, non-pointer or array variable declarations.
+                -- Stores the list of qualifiers (long, short, signed etc.) and the base type (char, int, float, structs, unions etc.).
 
--- | Full type declaration. Basic types represent normal variable declarations. \n
--- - Derived types are composed of Basic type + additional info.
--- - DerivedPointer has [QualifierType] for it's own pointers qualifiers. \n
--- - DerivedArray has a Maybe String field in case of size declaration. \n
--- - DerivedFuncPointer has one FullType field for it's return type and [FullType] for it's return types.
-data FullType = BasicType [QualifierType] BaseType
               | DerivedPointer [QualifierType] FullType
+                -- ^ Stores the pointer qualifiers (const, volatile, restrict, _Atomic etc.) and the type (basic or derived) it points to.
+
               | DerivedArray FullType (Maybe String)
+                -- ^ Stores the type (basic or derived) and the array size if specified.
+
               | DerivedFuncPointer FullType [FullType]
+                -- ^ Stores the return type (basic or derived) and a list of types for the arguments.
+
               deriving (Show, Eq)
 
-data CType = CInt
-           | CFloat
-           | CCustom Identifier
-           | CPointer CType
-           deriving (Show, Eq)
+-- | Represents the core structural elements (AST nodes) of a GenC file.
+-- This type captures both custom template boundaries and standard C constructs,
+-- allowing the transpiler to isolate generic code from standard C code.
+data TemplateDefinition
+                 = GenericBlock [Identifier] [TemplateDefinition]
+                   -- ^ A generic template block (e.g., @generic T { ... }@). 
+                   -- Stores the list of generic type parameters and the block's inner body.
 
-data TemplateDefinition = GenericBlock [Identifier] [TemplateDefinition]
                  | TypedefStruct Identifier [Statement]
-                 | Function FullType Identifier [Statement] TemplateDeclaration
-                 | RawC String
-                 deriving (Show, Eq)
+                   -- ^ A C struct declaration (e.g., @typedef struct { ... } Name;@).
+                   -- Stores the name of the struct and a list of its member fields.
 
+                 | Function FullType Identifier [Statement] TemplateDeclaration
+                   -- ^ A C function definition. 
+                   -- Stores the return type, function name, arguments list, and the raw function body.
+                 | RawC String
+                   -- ^ Pass-through C code.
+                   -- Unparseable lines, or standard C code that doesn't need template substitution.
+
+                 deriving (Show, Eq)
 
 instance Pretty TemplateDefinition where
     pretty :: TemplateDefinition -> Doc ann
