@@ -3,33 +3,56 @@ module Parser.ParseRawC where
 import Control.Monad (void)
 import Text.Megaparsec
 import Text.Megaparsec.Char
---import Text.Megaparsec.Debug (dbg)
 
 import AST
-import Parser.ParseJunk 
 import Parser.ParseStructural
 
 -- | Parse pure C code outside generic blocks.
-pRawC :: Parser Declaration
+pRawC :: Parser TemplateDefinition
 pRawC = do
-    notFollowedBy stopCondition
-    rawText <- someTill anySingle stopCondition
-    return $ RawC rawText
-    where
-        stopCondition = eof <|> lookAhead (try $ do
-            pJunk 
-            void (pKeyword "generic") -- <|> void (keyword "typedef" <* space1 <* string "struct")
-            )
+    notFollowedBy outerStopCondition
+    chunks <- some pCChunk
+    return $ RawC (concat chunks)
+  where
+    pCChunk = pBracedBlock <|> pSingleChar
+
+    pBracedBlock = do
+        open <- string "{"
+        body <- concat <$> many pCChunk
+        close <- string "}"
+        return $ open ++ body ++ close 
+    
+    pSingleChar = do
+        notFollowedBy outerStopCondition
+        notFollowedBy (string "}")
+        c <- anySingle
+        return [c]
+
+    outerStopCondition = eof <|> lookAhead (try $ void (pKeyword "generic"))
 
 -- | Parse pure C code inside generic blocks.
-pRawInnerC :: Parser Declaration
-pRawInnerC = --dbg "RAWC" $
-    do 
-    notFollowedBy stopCondition
-    rawText <- someTill anySingle stopCondition
-    return $ RawC rawText
-    where
-        stopCondition = lookAhead (try $ do
-            pJunk
-            void (char '}') <|> void (pKeyword "generic")  <|> void (string "typedef" <* space1 <* string "struct")
-            )
+pRawInnerC :: Parser TemplateDefinition
+pRawInnerC = do 
+    notFollowedBy innerStopCondition
+    chunks <- some pCChunk
+    return $ RawC (concat chunks)
+  where
+    pCChunk = pBracedBlock <|> pSingleChar
+
+    pBracedBlock = do
+        open <- string "{"
+        body <- concat <$> many pCChunk
+        close <- string "}"
+        return $ open ++ body ++ close 
+
+    pSingleChar = do
+        notFollowedBy innerStopCondition
+        notFollowedBy (string "}")
+        c <- anySingle
+        return [c]
+
+    innerStopCondition = lookAhead $ try $ void (
+            string "}"
+        <|> pKeyword "generic"
+        <|> (string "typedef" <* space1 <* string "struct")
+        )

@@ -60,6 +60,7 @@ library
     exposed-modules:
         AST,
         Parser.ParseCompoundStatement,
+        Parser.ParseFunction,
         Parser.ParseStatement,
         Parser.ParseIdentifier,
         Parser.ParseJunk,
@@ -116,7 +117,8 @@ test-suite Genc-test
 
     other-modules:
         ParserSpec,
-        IntegrationSpec
+        IntegrationSpec,
+        ParserFunctionSpec
 
     hs-source-dirs: test
 

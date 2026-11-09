@@ -5,11 +5,10 @@ import Parser.ParseIdentifier
 import Parser.ParseStructural
 
 
-
 -- | Parses statements ended with ";".
-pStatement :: Parser (CType, Identifier)
+pStatement :: Parser Statement
 pStatement = do
-    t <- pAnyType
+    t <- pFullType
     n <- pAnyIdentifier
     _ <- pSymbol ";"
     return (t, n)

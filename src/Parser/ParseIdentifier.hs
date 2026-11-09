@@ -16,15 +16,27 @@ pAnyIdentifier = lexeme $ (:) <$> letterChar <*> many (alphaNumChar <|> char '_'
 pIdentifier :: String -> Parser String
 pIdentifier identifier = lexeme $ string identifier
 
--- | Parse "int", "float" or custom typedef keywords.
-pAnyBaseType :: Parser CType
-pAnyBaseType = (CInt <$ pSymbol "int")
-        <|> (CFloat <$ pSymbol "float")
-        <|> (CCustom <$> pAnyIdentifier)
+typeQualifiers :: [String]
+typeQualifiers =
+    ["const", "volatile", "restrict", "_Atomic", "unsigned", "signed", "short", "long", "struct", "union", "enum"]
 
--- | Extracts the base type and wraps it in CPointer(s) if pointer(s).
-pAnyType :: Parser CType
-pAnyType = do
-    baseType <- pAnyBaseType
-    pointers <- many (pSymbol "*")
-    return $ foldl (\t _ -> CPointer t) baseType pointers
+pQualifier :: Parser QualifierType
+pQualifier = choice (map (try . pSymbol) typeQualifiers)
+
+pBasicType :: Parser FullType
+pBasicType = do
+    preQuals <- many pQualifier
+    baseName <- pAnyIdentifier
+    postQuals <- many pQualifier
+    return $ BasicType (preQuals ++ postQuals) baseName
+
+pPointerChunk :: Parser [QualifierType]
+pPointerChunk = do
+    _ <- pSymbol "*"
+    many (choice (map (try . pSymbol) ["const", "volatile", "restrict", "_Atomic"]))
+
+pFullType :: Parser FullType
+pFullType = do
+    base <- pBasicType
+    ptrChunks <- many pPointerChunk
+    return $ foldl (flip DerivedPointer) base ptrChunks

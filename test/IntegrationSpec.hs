@@ -10,6 +10,6 @@ import Parser.ParseProgram (pProgram)
 spec :: Spec
 spec = describe "Full File Integration" $ do
     it "successfully parses a generic struct file" $ do
-        fileContent <- readFile "test/fixtures/simple_struct.gc"
+        fileContent <- readFile "test/fixtures/minimal_struct.gc"
 
-        parse pProgram "simple_strcut.gc" `shouldSucceedOn` fileContent
+        parse pProgram "minimal_struct.gc" `shouldSucceedOn` fileContent
