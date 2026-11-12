@@ -4,11 +4,12 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 
 import AST
+import Parser.ParseChunk
 import Parser.ParseIdentifier
 import Parser.ParseStructural (pSymbol)
-
--- import Text.Megaparsec.Debug (dbg)
 import Parser.ParseJunk (pJunk)
+-- import Text.Megaparsec.Debug (dbg)
+
 
 -- | Parses function inside generic block
 pAnyFunction :: Parser TemplateDefinition
@@ -29,25 +30,10 @@ pAnyFunction = --dbg "FUNCTION" $
             n <- pAnyIdentifier
             return (t, n)
 
-        pAnyFunctionBody :: Parser String
+        pAnyFunctionBody :: Parser [BodyChunk]
         pAnyFunctionBody = do
             _ <- char '{'
             body <- concat <$> many pChunk
             _ <- char '}'
-            return body
+            return $ optimizeChunks body
 
-        pChunk :: Parser String
-        pChunk = pBracedBlock <|> pSingleChar
-
-        pBracedBlock :: Parser String
-        pBracedBlock = do
-            open <- string "{"
-            body <- concat <$> many pChunk
-            close <- string "}"
-            return $ open ++ body ++ close
-
-        pSingleChar :: Parser String
-        pSingleChar = do
-            notFollowedBy (char '}') 
-            c <- anySingle
-            return [c]

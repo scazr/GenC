@@ -59,6 +59,7 @@ library
 
     exposed-modules:
         AST,
+        Parser.ParseChunk,
         Parser.ParseCompoundStatement,
         Parser.ParseFunction,
         Parser.ParseStatement,

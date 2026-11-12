@@ -1,12 +1,12 @@
 module Parser.ParseIdentifier where
 
+import Control.Monad (void)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 
 import AST
 import Parser.ParseJunk
 import Parser.ParseStructural
-import Control.Monad (void)
 
 
 -- | Parses any user-defined name: Variable names, custom types, typedef declarations, etc.
@@ -49,7 +49,17 @@ pTypeWord = try $ do
 pBasicType :: Parser FullType
 pBasicType = do
     soup <- some pTypeWord
-    return $ resolveSoup soup
+
+    optArgs <- optional (try pTemplateArgs)
+
+    let resolvedBase = resolveSoup soup
+
+    return $ case optArgs of
+        Nothing -> resolvedBase
+        Just args ->
+            case resolvedBase of
+                BasicType quals baseName -> TemplateType quals baseName args
+                _ -> resolvedBase
 
 typeQualifiers :: [String]
 typeQualifiers =
@@ -68,3 +78,10 @@ pFullType = do
     base <- pBasicType
     ptrChunks <- many pPointerChunk
     return $ foldl (flip DerivedPointer) base ptrChunks
+
+pTemplateArgs :: Parser [FullType]
+pTemplateArgs = do
+    _ <- pSymbol "<"
+    args <- pFullType `sepBy1` pSymbol "," 
+    _ <- pSymbol ">"
+    return args
