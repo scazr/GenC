@@ -28,10 +28,10 @@ type Program = [TemplateDefinition]
 
 -- | Alias for String. Used for primitive (char, int, float, double etc.),
 -- composite (aggregate) and user-defined types (structs, unions, enums and typedefs).
-type BaseType = Identifier 
+type BaseType = Identifier
 
 -- | Alias for String. Used for type qualifier (const, unsigned, long, volatile etc.).
-type QualifierType = Identifier 
+type QualifierType = Identifier
 
 -- | Full type declaration.
 data FullType
@@ -73,12 +73,18 @@ data TemplateDefinition
 
                  deriving (Show, Eq)
 
+instance Pretty FullType where
+    pretty (TemplateType quals name args) =
+        "TemplateType" <+> pretty (show quals) <+> pretty (show name) <+> pretty (show args)
+    pretty a = pretty a
+
+
 instance Pretty BodyChunk where
-    pretty (RawBodyText text) = 
-        "RawBodyText" <> line <> 
+    pretty (RawBodyText text) =
+        "RawBodyText" <> line <>
         indent 4 (vsep (map pretty  (lines text)))
-        
-    pretty (TemplateCall funcName args) = 
+
+    pretty (TemplateCall funcName args) =
         "TemplateCall" <+> pretty (show funcName) <+> pretty (show args)
 
 instance Pretty TemplateDefinition where

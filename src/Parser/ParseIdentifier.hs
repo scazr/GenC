@@ -43,16 +43,17 @@ pTypeWord = try $ do
     if w `elem` typeKeywords
         then return w
         else do
-            lookAhead (void (try pAnyIdentifier) <|> void (pSymbol "*"))
+            lookAhead (void (try pAnyIdentifier) <|> void (pSymbol "*") <|> void (pSymbol "<"))
             return w
 
+-- | Scoops up type words, and checks if it's a Template Type
 pBasicType :: Parser FullType
 pBasicType = do
     soup <- some pTypeWord
+    let resolvedBase = resolveSoup soup
 
     optArgs <- optional (try pTemplateArgs)
 
-    let resolvedBase = resolveSoup soup
 
     return $ case optArgs of
         Nothing -> resolvedBase
@@ -79,6 +80,7 @@ pFullType = do
     ptrChunks <- many pPointerChunk
     return $ foldl (flip DerivedPointer) base ptrChunks
 
+-- | Parses `<int, char*>` returning [BasicType [] "int", DerivedPointer ...]
 pTemplateArgs :: Parser [FullType]
 pTemplateArgs = do
     _ <- pSymbol "<"

@@ -42,6 +42,7 @@ int main() {
     };
 
     get_next<List<int>>(&numbers);
+    test2<int>();
     return 0;
 }
 

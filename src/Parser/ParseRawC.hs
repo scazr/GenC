@@ -1,8 +1,6 @@
 module Parser.ParseRawC where
 
-import Control.Monad (void)
 import Text.Megaparsec
-import Text.Megaparsec.Char
 
 import AST
 import Parser.ParseChunk
